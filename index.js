@@ -73,11 +73,13 @@ mongoose.connect('mongodb://mongodb:27017/recipehub')
 async function seedDatabase() {
     try {
         const count = await Recipe.countDocuments();
-
-        await Recipe.deleteMany({}); // avoid duplicates and other potential conflicts by deleting recipes first
         
-        await Recipe.insertMany(seedRecipes);
-        
+        if (count === 0) {
+            await Recipe.insertMany(seedRecipes);
+            console.log('Database seeded');
+        } else {
+            console.log('Database already has data, skipping seed');
+        }
     } catch (error) {
         console.error("Error seeding database:", error);
     }
