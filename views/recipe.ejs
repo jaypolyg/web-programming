@@ -1,0 +1,177 @@
+<%- include('partials/header', {title: recipe.name}) %>
+
+<main class="container my-5">
+    <div class="mb-4">
+        <a href="/home" class="btn btn-outline-secondary">← Back to Recipes</a>
+    </div>
+
+    <header class="recipe-header">
+        <h1><%= recipe.name %></h1>
+        <p class="meta"><%= recipe.description %></p>
+    </header>
+
+    <div class="recipe-info">
+        <div class="info-item">
+            <span class="info-label">Prep Time</span>
+            <span class="info-value"><%= recipe.prepTime %></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Cook Time</span>
+            <span class="info-value"><%= recipe.cookTime %></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Servings</span>
+            <span class="info-value"><%= recipe.servings %></span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <section class="ingredients-section">
+                <h2>Ingredients</h2>
+                <div class="card">
+                    <% recipe.ingredientSections.forEach(section => { %>
+                        <h3><%= section.title %></h3>
+                        <ul>
+                            <% section.items.forEach(ingredient => { %>
+                                <li><%= ingredient %></li>
+                            <% }) %>
+                        </ul>
+                    <% }) %>
+                </div>
+            </section>
+
+            <section class="instructions-section">
+                <h2>Instructions</h2>
+                <div class="card">
+                    <ol>
+                        <% recipe.steps.forEach(step => { %>
+                            <li><%= step %></li>
+                        <% }) %>
+                    </ol>
+                </div>
+            </section>
+
+            <% if (recipe.proTip) { %>
+                <div class="note card">
+                    <strong>Pro Tip:</strong> <%= recipe.proTip %>
+                </div>
+            <% } %>
+
+            <% if (recipe.storage) { %>
+                <section class="storage-section">
+                    <h2>Storage</h2>
+                    <div class="card">
+                        <p><%= recipe.storage %></p>
+                    </div>
+                </section>
+            <% } %>
+
+            <section class="reviews-section mt-4">
+                <h2>Reviews</h2>
+                <div class="card p-3">
+                    <form id="reviewForm" enctype="multipart/form-data" class="mb-3">
+                        <div class="mb-2">
+                            <select id="reviewRating" class="form-select" required>
+                                <option value="">Select rating</option>
+                                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                                <option value="4">⭐⭐⭐⭐ (4)</option>
+                                <option value="3">⭐⭐⭐ (3)</option>
+                                <option value="2">⭐⭐ (2)</option>
+                                <option value="1">⭐ (1)</option>
+                            </select>
+                        </div>
+                        <textarea id="reviewText" class="form-control mb-2" placeholder="Write a review..." required></textarea>
+                        <div class="mb-2">
+                            <label class="form-label">Add a photo (optional)</label>
+                            <input type="file" id="reviewImage" class="form-control" accept="image/*">
+                        </div>
+                        <button class="btn btn-primary btn-sm">Post Review</button>
+                    </form>
+                    
+                    <div id="reviewsList"></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <img src="<%= recipe.image || '/images/default-recipe.jpg' %>" class="card-img-top" alt="<%= recipe.name %>">
+            </div>
+
+            <div class="card p-3 mb-3">
+                <h5>Recipe Details</h5>
+                <hr>
+                <p><strong>Author:</strong> <%= recipe.author %></p>
+                <p><strong>Difficulty:</strong> 
+                    <span class="badge difficulty-<%= recipe.difficulty.toLowerCase() %>">
+                        <%= recipe.difficulty %>
+                    </span>
+                </p>
+                <p><strong>Rating:</strong> <%= recipe.rating %> ⭐</p>
+                <% if (recipe.cuisine) { %>
+                    <p><strong>Cuisine:</strong> <%= recipe.cuisine %></p>
+                <% } %>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print Recipe</button>
+                <button class="btn btn-outline-secondary" id="saveRecipe">❤️ Save to Favorites</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+async function loadReviews() {
+    const response = await fetch('/api/recipes/<%= recipe._id %>/reviews');
+    const reviews = await response.json();
+    const container = document.getElementById("reviewsList");
+    
+    if (reviews.length === 0) {
+        container.innerHTML = "<p>No reviews yet.</p>";
+        return;
+    }
+    
+    container.innerHTML = reviews.map(r => `
+        <div class="mb-3 p-2 border-bottom">
+            <strong>${r.user?.username || 'Anonymous'}</strong>
+            <span>${'⭐'.repeat(r.rating)}</span>
+            <p class="mb-1">${r.text}</p>
+            ${r.image ? `<img src="${r.image}" class="img-fluid rounded" style="max-height: 200px;">` : ''}
+        </div>
+    `).join('');
+}
+
+document.getElementById("reviewForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append("text", document.getElementById("reviewText").value);
+    formData.append("rating", document.getElementById("reviewRating").value);
+    formData.append("userId", localStorage.getItem("userId"));
+    
+    const imageFile = document.getElementById("reviewImage").files[0];
+    if (imageFile) {
+        formData.append("image", imageFile);
+    }
+    
+    const response = await fetch('/api/recipes/<%= recipe._id %>/reviews', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (response.ok) {
+        loadReviews();
+        document.getElementById("reviewForm").reset();
+    } else {
+        alert("Error posting review");
+    }
+});
+
+loadReviews();
+</script>
+
+<script src="/js/recipe.js"></script>
+
+<%- include('partials/footer') %>
