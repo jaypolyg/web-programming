@@ -18,7 +18,8 @@ app.use(express.urlencoded({extended: true}));
 app.use(session({
     secret: 'secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+     cookie: { maxAge: 1000 * 60 * 60 * 24 } // 24 hrs
 }));
 
 function requireLogin(req, res, next) {
