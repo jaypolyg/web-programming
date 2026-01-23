@@ -1,7 +1,0 @@
-document.querySelectorAll("form").forEach(form=>{
-  form.addEventListener("submit", e=>{
-    e.preventDefault();
-    window.location.href="home.html";
-  });
-  localStorage.setItem("username", usernameInput.value);
-});
